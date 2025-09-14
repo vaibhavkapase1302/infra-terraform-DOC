@@ -10,7 +10,7 @@ echo "======================================"
 
 # Check if credentials are set
 if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
-    echo "❌ Spaces credentials not set!"
+    echo "❌ DigitalOcean Spaces credentials not set!"
     echo ""
     echo "Please set your DigitalOcean Spaces credentials:"
     echo ""
@@ -19,7 +19,7 @@ if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
     echo "3. Give it a name like 'terraform-state-key'"
     echo "4. Copy the Access Key and Secret Key"
     echo ""
-    echo "Then run:"
+    echo "Then run (note: these use AWS_* names because Spaces is S3-compatible):"
     echo "export AWS_ACCESS_KEY_ID='your_spaces_access_key'"
     echo "export AWS_SECRET_ACCESS_KEY='your_spaces_secret_key'"
     echo ""

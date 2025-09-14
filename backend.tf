@@ -11,7 +11,7 @@ terraform {
 # Uncomment the following block and comment out the local backend above
 # terraform {
 #   backend "s3" {
-#     # Note: DigitalOcean Spaces is S3-compatible
+#     # DigitalOcean Spaces (S3-compatible object storage)
 #     endpoint                    = "https://nyc3.digitaloceanspaces.com"
 #     region                      = "nyc3"
 #     bucket                      = "vk-terraform-state-bucket-doc"
@@ -20,7 +20,7 @@ terraform {
 #     skip_metadata_api_check     = true
 #     skip_region_validation      = true
 #     
-#     # Note: You'll need to set these environment variables:
+#     # Set DigitalOcean Spaces credentials (uses AWS_* names for S3 compatibility):
 #     # export AWS_ACCESS_KEY_ID="your_spaces_access_key"
 #     # export AWS_SECRET_ACCESS_KEY="your_spaces_secret_key"
 #   }
