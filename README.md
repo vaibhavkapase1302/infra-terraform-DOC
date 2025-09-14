@@ -1,6 +1,6 @@
 # DigitalOcean Infrastructure with Terraform
 
-This is a Terraform project I built DigitalOcean. It provisions a complete infrastructure setup on DigitalOcean including a Kubernetes cluster, container registry, and VPC networking - all ready for deploying containerized applications.
+This is a Terraform project I built on DigitalOcean. It provisions a complete infrastructure setup on DigitalOcean including a Kubernetes cluster, container registry, and VPC networking - all ready for deploying containerized applications.
 
 ## What This Creates
 
@@ -175,16 +175,4 @@ The IP range `10.30.0.0/16` might conflict with an existing VPC. Try changing it
 - **Cost-conscious**: Using the smallest node sizes and free registry tier
 - **Simple**: No complex networking or advanced features - just what's needed
 
-## Next Steps
-
-This infrastructure is ready for:
-- Deploying a Flask app (or any containerized app)
-- Setting up CI/CD pipelines
-- Adding monitoring and logging
-- Scaling up as needed
-
-The Kubernetes cluster is fully functional and the container registry is ready to store your images. You can start deploying applications right away!
-
 ---
-
-*Built as part of a DevOps DigitalOcean - feel free to use this as a starting point for your own projects.*
