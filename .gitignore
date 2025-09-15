@@ -2,6 +2,7 @@
 *.tfstate
 *.tfstate.*
 *.tfvars
+!envs/dev/infra.tfvars
 !*.tfvars.example
 .terraform/
 .terraform.lock.hcl

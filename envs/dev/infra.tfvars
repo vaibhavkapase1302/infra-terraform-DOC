@@ -1,9 +1,6 @@
 # Development environment configuration
 # This file contains variable values for the dev environment
 
-# DigitalOcean API Token (set via environment variable or terraform.tfvars)
-# do_token = "digitalocean_api_token_here"
-
 # Environment configuration
 environment = "dev"
 
