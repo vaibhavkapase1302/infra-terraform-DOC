@@ -13,7 +13,8 @@ resource "kubernetes_ingress_v1" "app" {
     namespace   = var.namespace
     annotations = merge({
       "kubernetes.io/ingress.class"               = "nginx",
-      "nginx.ingress.kubernetes.io/ssl-redirect" = "true"
+      "nginx.ingress.kubernetes.io/ssl-redirect" = "true",
+      "cert-manager.io/cluster-issuer"            = var.cluster_issuer
     }, var.annotations)
   }
 
@@ -40,7 +41,10 @@ resource "kubernetes_ingress_v1" "app" {
       }
     }
 
-    # TLS terminated at DO Load Balancer, so no tls section here
+    tls {
+      hosts       = [var.host]
+      secret_name = var.tls_secret_name
+    }
   }
 }
 

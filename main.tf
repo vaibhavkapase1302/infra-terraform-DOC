@@ -52,16 +52,27 @@ module "ingress_nginx" {
   depends_on = [module.k8s_doks]
 }
 
-## Application Ingress (no TLS section; TLS terminates at DO LB)
+## cert-manager for Let's Encrypt
+module "cert_manager" {
+  source = "./modules/cert-manager"
+
+  email               = var.letsencrypt_email
+  cluster_issuer_name = "letsencrypt-prod"
+
+  depends_on = [module.k8s_doks]
+}
+
+## Application Ingress with cert-manager TLS
 module "app_ingress" {
   source = "./modules/app-ingress"
 
   host            = var.app_hostname
   service_name    = "flask-app-service"
   service_port    = 80
-  tls_secret_name = "" # disabled; TLS at DO LB
+  tls_secret_name = "kubetux-com-tls"
+  cluster_issuer  = "letsencrypt-prod"
 
-  depends_on = [module.ingress_nginx]
+  depends_on = [module.ingress_nginx, module.cert_manager]
 }
 
 ## DigitalOcean Managed Certificate

@@ -29,8 +29,14 @@ variable "service_port" {
 
 variable "tls_secret_name" {
   type        = string
-  description = "TLS secret name (unused when terminating at DO LB)"
-  default     = ""
+  description = "TLS secret name for cert-manager to store the certificate"
+  default     = "kubetux-com-tls"
+}
+
+variable "cluster_issuer" {
+  type        = string
+  description = "cert-manager ClusterIssuer name"
+  default     = "letsencrypt-prod"
 }
 
 variable "annotations" {

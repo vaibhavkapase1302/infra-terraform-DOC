@@ -99,6 +99,11 @@ variable "additional_domains" {
   default     = []
 }
 
+variable "letsencrypt_email" {
+  description = "Email address for Let's Encrypt registration"
+  type        = string
+}
+
 # Tags
 variable "tags" {
   description = "Tags to apply to all resources"
