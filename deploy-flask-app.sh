@@ -32,42 +32,37 @@ fi
 echo "✅ Cluster access verified"
 echo ""
 
-# Deploy NGINX Ingress Controller
-echo "📦 Deploying NGINX Ingress Controller..."
-kubectl apply -f k8s-manifests/nginx-ingress-controller.yaml
-
-# Wait for ingress controller to be ready
-echo "⏳ Waiting for NGINX Ingress Controller to be ready..."
-kubectl wait --for=condition=available --timeout=300s deployment/nginx-ingress-controller -n kube-system
-
-echo "✅ NGINX Ingress Controller deployed"
+echo "ℹ️ Skipping NGINX Ingress install: managed by Terraform Helm modules (ingress-nginx, cert-manager, app-ingress)."
 echo ""
 
-# Deploy Flask Application
+# Deploy Flask Application (only Deployment and Service; Ingress is Terraform-managed)
 echo "📦 Deploying Flask Application..."
 kubectl apply -f k8s-manifests/flask-app-deployment.yaml
 kubectl apply -f k8s-manifests/flask-app-service.yaml
-kubectl apply -f k8s-manifests/flask-app-ingress.yaml
 
 # Wait for deployment to be ready
 echo "⏳ Waiting for Flask Application to be ready..."
 kubectl wait --for=condition=available --timeout=300s deployment/flask-app
 
-echo "✅ Flask Application deployed"
-echo ""
-
 # Show deployment status
 echo "📊 Deployment Status:"
 echo "===================="
-kubectl get pods -l app=flask-app
+kubectl get pods -l app=flask-app -o wide
+kubectl get svc -n ingress-nginx ingress-nginx-controller -o wide || true
 kubectl get services
-kubectl get ingress
+kubectl get ingress -o wide
 
+# Helpful curl hint
 echo ""
 echo "🔧 Next Steps:"
 echo "=============="
-echo "1. Get Load Balancer IP: terraform output lb_ip"
-echo "2. Update DNS: Point www.kubetux.com to Load Balancer IP"
-echo "3. Test: curl http://www.kubetux.com"
+echo "1. Get Load Balancer IP (Ingress Controller): kubectl get svc -n ingress-nginx ingress-nginx-controller -o wide"
+
+LB_IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
+if [ -n "$LB_IP" ]; then
+  echo "2. Test via IP (host header): curl -H 'Host: www.kubetux.com' http://$LB_IP/"
+fi
+
+echo "3. After DNS propagates: curl -v http://www.kubetux.com/"
 echo ""
 echo "📚 For more info, see REQUEST_FLOW_DIAGRAM.md"

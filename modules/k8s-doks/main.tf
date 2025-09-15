@@ -22,7 +22,7 @@ resource "digitalocean_kubernetes_cluster" "main" {
     size       = var.node_size
     node_count = var.node_count
     auto_scale = true
-    min_nodes  = 1
+    min_nodes  = 2
     max_nodes  = 3
     
     # Add tags to nodes

@@ -55,25 +55,15 @@ output "vpc_name" {
   value       = module.networking.vpc_name
 }
 
-# Load Balancer outputs
-output "lb_id" {
-  description = "ID of the load balancer"
-  value       = module.load_balancer.lb_id
+# Ingress Controller outputs
+output "ingress_controller_service_name" {
+  description = "Name of the ingress-nginx controller Service"
+  value       = module.ingress_nginx.controller_service_name
 }
 
-output "lb_name" {
-  description = "Name of the load balancer"
-  value       = module.load_balancer.lb_name
-}
-
-output "lb_ip" {
-  description = "Public IP address of the load balancer"
-  value       = module.load_balancer.lb_ip
-}
-
-output "lb_status" {
-  description = "Status of the load balancer"
-  value       = module.load_balancer.lb_status
+output "ingress_controller_namespace" {
+  description = "Namespace of the ingress-nginx controller"
+  value       = module.ingress_nginx.namespace
 }
 
 # Kubeconfig for local kubectl access

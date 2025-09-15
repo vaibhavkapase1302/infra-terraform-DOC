@@ -35,15 +35,43 @@ module "k8s_doks" {
   depends_on = [module.networking, module.img_registry]
 }
 
-# DigitalOcean Load Balancer module
-module "load_balancer" {
-  source = "./modules/load-balancer"
-  
-  lb_name          = var.lb_name
-  region           = var.region
-  k8s_cluster_name = var.k8s_cluster_name
-  ssl_certificate_id = var.ssl_certificate_id
-  health_check_path = var.health_check_path
-  
+## Ingress NGINX via Helm
+module "ingress_nginx" {
+  source = "./modules/ingress-nginx"
+
+  namespace       = "ingress-nginx"
+  release_name    = "ingress-nginx"
+  chart_version   = "4.11.2"
+  replica_count   = 2
+  service_annotations = {
+    # Example: keep LB internal to VPC or set health checks
+    # "service.beta.kubernetes.io/do-loadbalancer-enable-backend-keepalive" = "true"
+  }
+  do_certificate_id = module.do_certificate.certificate_id
+
+  depends_on = [module.k8s_doks]
+}
+
+## Application Ingress (no TLS section; TLS terminates at DO LB)
+module "app_ingress" {
+  source = "./modules/app-ingress"
+
+  host            = var.app_hostname
+  service_name    = "flask-app-service"
+  service_port    = 80
+  tls_secret_name = "" # disabled; TLS at DO LB
+
+  depends_on = [module.ingress_nginx]
+}
+
+## DigitalOcean Managed Certificate
+module "do_certificate" {
+  source = "./modules/do-certificate"
+
+  name              = var.do_cert_name
+  root_domain       = var.root_domain
+  hostname          = var.app_hostname
+  additional_domains = var.additional_domains
+
   depends_on = [module.k8s_doks]
 }

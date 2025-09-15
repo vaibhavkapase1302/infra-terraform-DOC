@@ -29,13 +29,13 @@ variable "k8s_cluster_name" {
 variable "k8s_node_size" {
   description = "Size of Kubernetes nodes"
   type        = string
-  default     = "s-1vcpu-2gb"
+  default     = "s-4vcpu-8gb"  # ← upgraded from s-1vcpu-2gb
 }
 
 variable "k8s_node_count" {
   description = "Number of nodes in the Kubernetes cluster"
   type        = number
-  default     = 2
+  default     = 3
 }
 
 # Container Registry configuration
@@ -75,6 +75,28 @@ variable "health_check_path" {
   description = "Health check path for the load balancer"
   type        = string
   default     = "/health"
+}
+
+variable "app_hostname" {
+  description = "Hostname for the application Ingress (e.g., www.kubetux.com)"
+  type        = string
+}
+
+variable "root_domain" {
+  description = "Root domain (e.g., kubetux.com)"
+  type        = string
+}
+
+variable "do_cert_name" {
+  description = "DigitalOcean certificate resource name"
+  type        = string
+  default     = "kubetux-com-cert"
+}
+
+variable "additional_domains" {
+  description = "Additional domains for the certificate SANs"
+  type        = list(string)
+  default     = []
 }
 
 # Tags
