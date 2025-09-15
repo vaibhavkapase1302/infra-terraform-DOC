@@ -7,7 +7,7 @@ variable "name" {
 variable "namespace" {
   type        = string
   description = "Namespace where the Service lives"
-  default     = "default"
+  default     = "flask"
 }
 
 variable "host" {
