@@ -55,6 +55,27 @@ output "vpc_name" {
   value       = module.networking.vpc_name
 }
 
+# Load Balancer outputs
+output "lb_id" {
+  description = "ID of the load balancer"
+  value       = module.load_balancer.lb_id
+}
+
+output "lb_name" {
+  description = "Name of the load balancer"
+  value       = module.load_balancer.lb_name
+}
+
+output "lb_ip" {
+  description = "Public IP address of the load balancer"
+  value       = module.load_balancer.lb_ip
+}
+
+output "lb_status" {
+  description = "Status of the load balancer"
+  value       = module.load_balancer.lb_status
+}
+
 # Kubeconfig for local kubectl access
 output "kubeconfig" {
   description = "Kubeconfig content for kubectl access"

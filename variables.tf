@@ -58,6 +58,25 @@ variable "vpc_region" {
   default     = "nyc1"
 }
 
+# Load Balancer configuration
+variable "lb_name" {
+  description = "Name of the load balancer"
+  type        = string
+  default     = "flask-app-lb"
+}
+
+variable "ssl_certificate_id" {
+  description = "SSL certificate ID for HTTPS (optional)"
+  type        = string
+  default     = null
+}
+
+variable "health_check_path" {
+  description = "Health check path for the load balancer"
+  type        = string
+  default     = "/health"
+}
+
 # Tags
 variable "tags" {
   description = "Tags to apply to all resources"

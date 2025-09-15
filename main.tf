@@ -34,3 +34,16 @@ module "k8s_doks" {
   
   depends_on = [module.networking, module.img_registry]
 }
+
+# DigitalOcean Load Balancer module
+module "load_balancer" {
+  source = "./modules/load-balancer"
+  
+  lb_name          = var.lb_name
+  region           = var.region
+  k8s_cluster_name = var.k8s_cluster_name
+  ssl_certificate_id = var.ssl_certificate_id
+  health_check_path = var.health_check_path
+  
+  depends_on = [module.k8s_doks]
+}

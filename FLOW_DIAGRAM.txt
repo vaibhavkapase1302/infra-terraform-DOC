@@ -1,0 +1,81 @@
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                    FLASK APPLICATION REQUEST FLOW                              │
+│                        www.kubetux.com → Pod                                   │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────┐
+│   Internet  │
+│    User     │
+└──────┬──────┘
+       │ 1. DNS Lookup: www.kubetux.com
+       ▼
+┌─────────────────┐
+│   DNS Provider   │ ← External DNS (Cloudflare, Route53, etc.)
+│  (kubetux.com)  │
+└──────┬──────────┘
+       │ 2. Resolves to Load Balancer IP
+       ▼
+┌─────────────────────────────────┐
+│     DigitalOcean Load Balancer   │ ← NEW: Need to add this
+│     (External IP: 157.245.x.x)  │
+└──────┬───────────────────────────┘
+       │ 3. HTTP/HTTPS Request
+       ▼
+┌─────────────────────────────────┐
+│     DigitalOcean Kubernetes     │ ← EXISTING: You have this
+│     Cluster (DOKS)              │
+└──────┬───────────────────────────┘
+       │ 4. Ingress Controller
+       ▼
+┌─────────────────────────────────┐
+│     NGINX Ingress Controller     │ ← NEW: Need to add this
+│     (Pod in kube-system)         │
+└──────┬───────────────────────────┘
+       │ 5. Route based on Host header
+       ▼
+┌─────────────────────────────────┐
+│     Kubernetes Ingress          │ ← NEW: Need to add this
+│     (Ingress Resource)           │
+└──────┬───────────────────────────┘
+       │ 6. Service Discovery
+       ▼
+┌─────────────────────────────────┐
+│     Kubernetes Service           │ ← NEW: Need to add this
+│     (ClusterIP Service)          │
+└──────┬───────────────────────────┘
+       │ 7. Load Balance to Pods
+       ▼
+┌─────────────────────────────────┐
+│     Flask Application Pods      │ ← NEW: Need to add this
+│     (Your Flask App)             │
+└─────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              INFRASTRUCTURE STATUS                              │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+✅ EXISTING (You Have):
+   • DigitalOcean Kubernetes Cluster
+   • DigitalOcean Container Registry  
+   • VPC Networking
+
+❌ MISSING (Need to Add):
+   • DigitalOcean Load Balancer
+   • NGINX Ingress Controller
+   • Kubernetes Ingress Resource
+   • Kubernetes Service Resource
+   • Flask App Deployment
+   • DNS Configuration (External)
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              REQUEST FLOW STEPS                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+1. User types www.kubetux.com
+2. DNS resolves to Load Balancer IP (157.245.x.x)
+3. Load Balancer routes to healthy Kubernetes nodes
+4. NGINX Ingress Controller processes the request
+5. Ingress Resource routes based on Host header
+6. Kubernetes Service load balances to Flask pods
+7. Flask pod processes request and returns response
+8. Response flows back through the same path
