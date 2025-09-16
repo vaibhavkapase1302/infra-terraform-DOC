@@ -1,6 +1,8 @@
-# DigitalOcean Kubernetes + Ingress + TLS (Terraform)
+# IaaC Terraform DigitalOcean Kubernetes + Ingress + TLS
 
-This repo provisions a production-ready path to run a Flask app on DigitalOcean Kubernetes (DOKS) behind NGINX Ingress with automatic HTTPS via cert-manager and Let’s Encrypt. It also creates a DigitalOcean Container Registry (DOCR) and a VPC.
+> **Single-click, multi-environment IaC for DigitalOcean Kubernetes, using clean and reusable Terraform modules.**
+
+This repo provisions a production-ready Kubernetes infrastructure on DigitalOcean, including NGINX Ingress with automatic HTTPS via cert-manager and Let’s Encrypt, a DigitalOcean Container Registry (DOCR), and a VPC. It is designed for deploying containerized applications using reusable and clean Terraform modules.
 
 ## What This Creates
 
@@ -49,7 +51,7 @@ You'll need:
 
 1. Go to [DigitalOcean API Tokens](https://cloud.digitalocean.com/account/api/tokens)
 2. Generate a new token
-3. Copy it - you'll need it in a minute
+3. Copy it - you'll need it in future
 
 ### Deploy Everything
 
@@ -91,7 +93,7 @@ kubectl get nodes
 
 You should see your nodes listed and Ready.
 
-### Push Docker Images to DOCR
+### Push Docker Images to DOCR (For testing purpose)
 
 ```bash
 # Login and push
@@ -104,6 +106,18 @@ doctl registry kubernetes-manifest | kubectl apply -f -
 
 # Optional: attach secret to default ServiceAccount so Pods can pull by default
 kubectl patch serviceaccount default -p '{"imagePullSecrets":[{"name":"registry-flask-app-dev-registry"}]}' -n flask
+```
+
+### For Testing (DigitalOcean & Kubernetes CLI)
+
+```bash
+doctl auth init
+doctl account get
+doctl kubernetes cluster list
+doctl kubernetes cluster kubeconfig save flask-app-dev-cluster
+kubectl config get-contexts
+kubectl get nodes
+kubectl get pods -A
 ```
 
 ## DNS and TLS
@@ -135,7 +149,7 @@ Terraform state is configured to use DigitalOcean Spaces (S3-compatible) in `bac
 export AWS_ACCESS_KEY_ID="<YOUR_SPACES_ACCESS_KEY>"
 export AWS_SECRET_ACCESS_KEY="<YOUR_SPACES_SECRET_KEY>"
 
-# 2) Initialize and migrate existing local state to Spaces
+# 2) Initialize and migrate existing local state to Spaces (One time set-up mmigrating from local to s3)
 terraform init -migrate-state
 
 # 3) Reconfigure (safe to run after migrating/backends updates)
@@ -170,6 +184,7 @@ k8s_node_count = 3
 
 ```hcl
 region = "nyc3"
+```
 
 ### App + TLS variables
 
@@ -178,7 +193,6 @@ app_hostname       = "kubetux.com"
 root_domain        = "kubetux.com"
 additional_domains = ["www.kubetux.com"]
 letsencrypt_email  = "you@example.com"
-```
 ```
 
 ## Cleanup
@@ -198,19 +212,11 @@ This will delete everything and stop the billing. The Kubernetes cluster is the 
 - Refresh the secret: `doctl registry kubernetes-manifest | kubectl apply -f -`
 - Patch the ServiceAccount in the target namespace (e.g., `flask`).
 
-### ClusterIssuer already exists
-- If created manually earlier, either import it into state, or delete it and re-apply.
-
 ### cert-manager CRDs not ready
 - The module waits briefly; if it still fails, re-run `terraform apply`.
 
-### Why `.tfvars` not committed
-- `.gitignore` usually excludes `*.tfvars`. Commit an example like `infra.example.tfvars` instead.
+- **DNS propagation delay**  
+  After updating your domain’s A record, it may take several minutes for DNS changes to propagate and for TLS certificates to be issued.
 
-## Design Notes
-
-- **Ingress-managed LoadBalancer**: We rely on the ingress-nginx Service of type LoadBalancer; no separate LB module is needed.
-- **Helm via Terraform**: Both ingress-nginx and cert-manager are installed via Helm resources.
-- **HTTP→HTTPS**: Enforced by Ingress annotation; certs via `ClusterIssuer`.
-
----
+- **Pods stuck in Pending state**
+  - Run `kubectl describe pod <pod-name> -n <namespace>` to check for insufficient resources or missing image pull secrets.

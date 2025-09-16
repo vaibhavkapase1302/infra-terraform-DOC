@@ -1,3 +1,5 @@
+## To use local state, uncomment the following block and comment out the remote state block below.
+
 # terraform {
 #   backend "local" {
 #     path = "terraform.tfstate"
