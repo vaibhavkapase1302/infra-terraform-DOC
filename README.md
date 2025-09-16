@@ -93,21 +93,6 @@ kubectl get nodes
 
 You should see your nodes listed and Ready.
 
-### Push Docker Images to DOCR (For testing purpose)
-
-```bash
-# Login and push
-doctl registry login
-docker tag flask-app:v1.0.0-dev registry.digitalocean.com/flask-app-dev-registry/flask-app:v1.0.0-dev
-docker push registry.digitalocean.com/flask-app-dev-registry/flask-app:v1.0.0-dev
-
-# Create/refresh the Kubernetes pull secret (default namespace by default)
-doctl registry kubernetes-manifest | kubectl apply -f -
-
-# Optional: attach secret to default ServiceAccount so Pods can pull by default
-kubectl patch serviceaccount default -p '{"imagePullSecrets":[{"name":"registry-flask-app-dev-registry"}]}' -n flask
-```
-
 ### For Testing (DigitalOcean & Kubernetes CLI)
 
 ```bash
