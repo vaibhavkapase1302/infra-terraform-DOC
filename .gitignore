@@ -1,9 +1,9 @@
 # Terraform files
 *.tfstate
 *.tfstate.*
-*.tfvars
-!envs/dev/infra.tfvars
-!*.tfvars.example
+# *.tfvars
+# !envs/dev/infra.tfvars
+# !*.tfvars.example
 .terraform/
 terraform.tfvars
 .terraform.lock.hcl

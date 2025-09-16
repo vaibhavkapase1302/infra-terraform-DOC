@@ -10,7 +10,7 @@
        │ 1. DNS Lookup: www.kubetux.com
        ▼
 ┌─────────────────┐
-│   DNS Provider   │ ← External DNS (Cloudflare, Route53, etc.)
+│   DNS Provider   │ ← DO DNS
 │  (kubetux.com)  │
 └──────┬──────────┘
        │ 2. Resolves to Load Balancer IP

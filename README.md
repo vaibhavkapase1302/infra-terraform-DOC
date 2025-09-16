@@ -1,32 +1,37 @@
-# DigitalOcean Infrastructure with Terraform
+# DigitalOcean Kubernetes + Ingress + TLS (Terraform)
 
-This is a Terraform project I built on DigitalOcean. It provisions a complete infrastructure setup on DigitalOcean including a Kubernetes cluster, container registry, and VPC networking - all ready for deploying containerized applications.
+This repo provisions a production-ready path to run a Flask app on DigitalOcean Kubernetes (DOKS) behind NGINX Ingress with automatic HTTPS via cert-manager and Let’s Encrypt. It also creates a DigitalOcean Container Registry (DOCR) and a VPC.
 
 ## What This Creates
 
-When you run this Terraform configuration, it will set up:
+When you apply this configuration, it sets up:
 
-- **Kubernetes Cluster**: A 2-node DOKS cluster running in NYC3
-- **Container Registry**: A private registry for storing Docker images
-- **VPC Network**: Isolated networking with custom IP ranges
-- **All the connections**: Everything is wired together and ready to use
+- **DOKS Cluster**: Managed Kubernetes in `nyc3` with your desired node size/count
+- **VPC Network**: Isolated networking for the cluster
+- **DO Container Registry**: Private registry for app images
+- **Ingress-NGINX (Helm)**: Ingress controller with a public LoadBalancer
+- **cert-manager (Helm) + ClusterIssuer**: Automatic TLS via Let’s Encrypt
+- **Kubernetes Ingress**: Host-based routing for `kubetux.com` to your Flask service
 
 ## Project Structure
 
 ```
 infra-terraform-DOC/
 ├── backend.tf                    # How Terraform stores its state
-├── main.tf                      # Main configuration that ties everything together
-├── providers.tf                  # DigitalOcean and Kubernetes providers
+├── main.tf                      # Orchestrates all modules
+├── providers.tf                  # DO, Kubernetes, Helm, Time providers
 ├── variables.tf                  # Input variables and their types
 ├── outputs.tf                    # What gets returned after deployment
 ├── deploy.sh                    # One-command deployment script
 ├── migrate-to-spaces.sh         # Optional: move state to DigitalOcean Spaces
 ├── terraform.tfvars             # My actual configuration values
 ├── modules/                     # Reusable Terraform modules
-│   ├── k8s-doks/               # Kubernetes cluster module
-│   ├── img-registry/           # Container registry module
-│   └── networking/             # VPC and networking module
+│   ├── k8s-doks/               # DigitalOcean Kubernetes cluster
+│   ├── img-registry/           # DigitalOcean Container Registry
+│   ├── networking/             # VPC
+│   ├── ingress-nginx/          # Helm release for NGINX Ingress Controller
+│   ├── cert-manager/           # Helm release + ClusterIssuer
+│   └── app-ingress/            # Kubernetes Ingress for the Flask app
 └── envs/dev/infra.tfvars       # Environment-specific settings
 ```
 
@@ -35,8 +40,9 @@ infra-terraform-DOC/
 ### Prerequisites
 
 You'll need:
-- A DigitalOcean account (I'm using the free tier)
-- Terraform installed (I used version 1.6+)
+- A DigitalOcean account
+- Terraform >= 1.3 (tested with 1.6+)
+- `doctl` and `kubectl` installed
 - A DigitalOcean API token with read/write permissions
 
 ### Get Your API Token
@@ -48,61 +54,74 @@ You'll need:
 ### Deploy Everything
 
 ```bash
-# Set your API token
+# Set your API token (required by Terraform DO provider and doctl)
 export DO_TOKEN="your_token_here"
+doctl auth init -t "$DO_TOKEN"
 
-# Run the deployment script
-./deploy.sh
+# Initialize and inspect the plan with your env vars
+terraform init -reconfigure
+terraform plan -var-file="envs/dev/infra.tfvars"
+
+# Apply
+terraform apply -var-file="envs/dev/infra.tfvars"
 ```
 
-That's it! The script will initialize Terraform, plan the deployment, ask for confirmation, and then create all the resources.
+This will create the cluster, ingress controller, cert-manager + ClusterIssuer, and the app Ingress.
 
-## What Gets Created
+## Outputs (useful after apply)
 
-### Kubernetes Cluster
-- **Name**: `flask-app-dev-cluster`
-- **Nodes**: 2x `s-1vcpu-2gb` (the smallest size for cost efficiency)
-- **Region**: NYC3
-- **Auto-scaling**: Not enabled (keeping it simple for now)
+```bash
+terraform output
+```
 
-### Container Registry
-- **Name**: `flask-app-dev-registry`
-- **Tier**: Starter (free 500MB)
-- **Endpoint**: `registry.digitalocean.com/flask-app-dev-registry`
-
-### VPC Network
-- **Name**: `flask-app-dev-vpc-nyc3`
-- **IP Range**: `10.30.0.0/16`
-- **Region**: NYC3
+- **k8s_cluster_endpoint**: DOKS API endpoint
+- **ingress_controller_service_name/namespace**: The ingress Service exposed as LoadBalancer
+- Use `kubectl -n ingress-nginx get svc ingress-nginx-controller` to see the public IP
 
 ## Using Your Infrastructure
 
 ### Connect to Kubernetes
 
 ```bash
-# Get the kubeconfig file
+# Get the kubeconfig and use it
 terraform output -raw kubeconfig > kubeconfig.yaml
-
-# Tell kubectl to use it
 export KUBECONFIG=./kubeconfig.yaml
-
-# Check that it works
 kubectl get nodes
 ```
 
-You should see your 2 nodes listed and ready.
+You should see your nodes listed and Ready.
 
-### Push Docker Images
+### Push Docker Images to DOCR
 
 ```bash
-# Login to the registry
+# Login and push
 doctl registry login
+docker tag flask-app:v1.0.0-dev registry.digitalocean.com/flask-app-dev-registry/flask-app:v1.0.0-dev
+docker push registry.digitalocean.com/flask-app-dev-registry/flask-app:v1.0.0-dev
 
-# Tag your image
-docker tag my-app:latest registry.digitalocean.com/flask-app-dev-registry/my-app:latest
+# Create/refresh the Kubernetes pull secret (default namespace by default)
+doctl registry kubernetes-manifest | kubectl apply -f -
 
-# Push it
-docker push registry.digitalocean.com/flask-app-dev-registry/my-app:latest
+# Optional: attach secret to default ServiceAccount so Pods can pull by default
+kubectl patch serviceaccount default -p '{"imagePullSecrets":[{"name":"registry-flask-app-dev-registry"}]}' -n flask
+```
+
+## DNS and TLS
+
+1. Point your domain `kubetux.com` A record to the Ingress LoadBalancer public IP. Get it via:
+
+```bash
+kubectl -n ingress-nginx get svc ingress-nginx-controller
+```
+
+2. TLS is handled by cert-manager using the `ClusterIssuer` `letsencrypt-prod`. The app ingress requests a certificate for `kubetux.com` and stores it in the secret `kubetux-com-tls`.
+
+3. Verify:
+
+```bash
+kubectl get certificate -n flask
+curl -I https://kubetux.com
+curl -I http://kubetux.com   # should 308 redirect to https
 ```
 
 ## State Management
@@ -130,19 +149,28 @@ You can migrate to DigitalOcean Spaces using the included script:
 
 Edit `envs/dev/infra.tfvars`:
 ```hcl
-k8s_node_size = "s-2vcpu-4gb"  # Upgrade to 2 vCPU, 4GB RAM
+k8s_node_size = "s-4vcpu-8gb"
 ```
 
 ### Add More Nodes
 
 ```hcl
-k8s_node_count = 3  # Add a third node
+k8s_node_count = 3
 ```
 
 ### Different Region
 
 ```hcl
-region = "sfo3"  # San Francisco instead of NYC
+region = "nyc3"
+
+### App + TLS variables
+
+```hcl
+app_hostname       = "kubetux.com"
+root_domain        = "kubetux.com"
+additional_domains = ["www.kubetux.com"]
+letsencrypt_email  = "you@example.com"
+```
 ```
 
 ## Cleanup
@@ -157,22 +185,24 @@ This will delete everything and stop the billing. The Kubernetes cluster is the 
 
 ## Troubleshooting
 
-### "InvalidAccessKeyId" Error
-This usually means your `DO_TOKEN` isn't set or is wrong. Double-check it.
+### Image pull 401 Unauthorized
+- Ensure the Deployment references `imagePullSecrets: [{ name: registry-flask-app-dev-registry }]`
+- Refresh the secret: `doctl registry kubernetes-manifest | kubectl apply -f -`
+- Patch the ServiceAccount in the target namespace (e.g., `flask`).
 
-### "Resource already exists" Error
-You might have created resources with the same name before. Either:
-- Change the names in `envs/dev/infra.tfvars`
-- Or destroy the existing resources first
+### ClusterIssuer already exists
+- If created manually earlier, either import it into state, or delete it and re-apply.
 
-### "VPC range overlaps" Error
-The IP range `10.30.0.0/16` might conflict with an existing VPC. Try changing it in the networking module.
+### cert-manager CRDs not ready
+- The module waits briefly; if it still fails, re-run `terraform apply`.
 
-## Why I Built It This Way
+### Why `.tfvars` not committed
+- `.gitignore` usually excludes `*.tfvars`. Commit an example like `infra.example.tfvars` instead.
 
-- **Modular**: Each component (K8s, registry, networking) is in its own module
-- **Environment-specific**: Easy to add staging/prod environments later
-- **Cost-conscious**: Using the smallest node sizes and free registry tier
-- **Simple**: No complex networking or advanced features - just what's needed
+## Design Notes
+
+- **Ingress-managed LoadBalancer**: We rely on the ingress-nginx Service of type LoadBalancer; no separate LB module is needed.
+- **Helm via Terraform**: Both ingress-nginx and cert-manager are installed via Helm resources.
+- **HTTP→HTTPS**: Enforced by Ingress annotation; certs via `ClusterIssuer`.
 
 ---
