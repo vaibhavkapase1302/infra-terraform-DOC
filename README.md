@@ -126,22 +126,30 @@ curl -I http://kubetux.com   # should 308 redirect to https
 
 ## State Management
 
-Right now, Terraform stores its state locally in `terraform.tfstate`. This works fine for solo development, but if you want to:
+Terraform state is configured to use DigitalOcean Spaces (S3-compatible) in `backend.tf`.
 
-- Work with a team
-- Store state remotely
-- Have automatic backups
-
-You can migrate to DigitalOcean Spaces using the included script:
+### Configure credentials and migrate state
 
 ```bash
-# First, get Spaces access keys from DigitalOcean
-# Go to: https://cloud.digitalocean.com/account/api/spaces
-# Generate new key and copy the Access Key and Secret Key
+# 1) Set your Spaces credentials (S3-compatible). Store securely in your shell/session
+export AWS_ACCESS_KEY_ID="<YOUR_SPACES_ACCESS_KEY>"
+export AWS_SECRET_ACCESS_KEY="<YOUR_SPACES_SECRET_KEY>"
 
-# Run the migration script - it will guide you through the process
-./migrate-to-spaces.sh
+# 2) Initialize and migrate existing local state to Spaces
+terraform init -migrate-state
+
+# 3) Reconfigure (safe to run after migrating/backends updates)
+terraform init -reconfigure
+
+# 4) Plan and apply with your env vars
+terraform plan -var-file="envs/dev/infra.tfvars"
+terraform apply -var-file="envs/dev/infra.tfvars" -auto-approve
 ```
+
+Notes:
+- Backend points to endpoint `https://nyc3.digitaloceanspaces.com` and bucket set in `backend.tf`.
+- The environment variables above are the standard S3 credentials used by Terraform’s S3 backend.
+- Do not commit credentials; keep them in your shell or a secrets manager.
 
 ## Customization
 
