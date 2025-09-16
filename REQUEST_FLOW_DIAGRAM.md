@@ -36,7 +36,7 @@ Internet User
      │ 5. Pod(s)
      ▼
 ┌─────────────────────────────────┐
-│  flask-app Deployment           │ Image: DOCR
+│  flask-app Deployment           │
 └─────────────────────────────────┘
 ```
 
@@ -54,10 +54,7 @@ Internet User
 - Module: `modules/app-ingress`
 - Host: `kubetux.com`, TLS secret: `kubetux-com-tls`, issuer: `letsencrypt-prod`
 
-### 4) Service (YAML manifest)
-- `k8s-manifests/flask-app-service.yaml` type `ClusterIP`
-
-### 5) Deployment (YAML manifest)
+### 4) Deployment (YAML manifest)
 - `k8s-manifests/flask-app-deployment.yaml` uses image from DOCR
 - References `imagePullSecrets: registry-flask-app-dev-registry`
 
@@ -65,7 +62,7 @@ Internet User
 
 1. Set DNS A record: `kubetux.com` → ingress public IP
 2. Terraform installs ingress-nginx and cert-manager
-3. Terraform creates ClusterIssuer `letsencrypt-prod`
+3. Terraform creates ClusterIssuer `letsencrypt`
 4. Terraform creates Ingress for `kubetux.com` with TLS
 5. cert-manager completes HTTP-01 and issues certificate
 6. NGINX serves HTTPS and redirects HTTP→HTTPS
